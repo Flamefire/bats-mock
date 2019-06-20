@@ -74,16 +74,7 @@ while IFS= read -r line; do
       esac
     done
 
-    # If the arguments matched, evaluate the command
-    # in a subshell. Otherwise, log the failure.
-    if [ $match_found -eq 1 ] ; then
-      set +e
-      ( eval "$command" )
-      status="$?"
-      set -e
-    else
-      eval "${_STUB_RESULT}"=1
-    fi
+    break
   fi
 done < "${!_STUB_PLAN}"
 
@@ -116,9 +107,14 @@ if [ -n "${!_STUB_END}" ]; then
   exit "${!_STUB_RESULT}"
 
 else
-  # If the requested index is larger than the number
-  # of lines in the plan file, we failed.
-  if [ $match_found -eq 0 ]; then
+  # If the line was found, execute command in a subshell
+  # else record error
+  if [ $match_found -eq 1 ]; then
+    set +e
+    ( eval "$command" )
+    status="$?"
+    set -e
+  else
     eval "${_STUB_RESULT}"=1
     printf '%s\n' "$*" >> "${!_STUB_ERRORS}"
   fi
