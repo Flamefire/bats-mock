@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-load '../stub'
+load '../load'
 
 function teardown() {
     # Just clean up

@@ -1,0 +1,45 @@
+{
+  "name": "bats-mock",
+  "version": "1.3.0",
+  "description": "Mocking/stubbing library for BATS",
+  "homepage": "https://github.com/Flamefire/bats-mock",
+  "license": "MIT",
+  "author": "Jason Karns <jason.karns@gmail.com> (http://jason.karns.name)",
+  "contributors": [
+    "Lachlan Donald <lachlan@ljd.cc>",
+    "Alexander Grund (https://github.com/Flamefire)"
+  ],
+  "repository": "github:Flamefire/bats-mock",
+  "bugs": "https://github.com/Flamefire/bats-mock/issues",
+  "directories": {
+    "lib": "src",
+    "test": "tests"
+  },
+  "files": [
+    "load.bash",
+    "src"
+  ],
+  "scripts": {
+    "test": "bats ${CI+-t} tests",
+    "postversion": "npm publish",
+    "prepublishOnly": "npm run publish:github",
+    "publish:github": "git push --follow-tags"
+  },
+  "devDependencies": {
+    "bats": "^1"
+  },
+  "peerDependencies": {
+    "bats": "^1"
+  },
+  "keywords": [
+    "bats",
+    "bash",
+    "shell",
+    "test",
+    "unit",
+    "mock",
+    "stub",
+    "mocking",
+    "stubbing"
+  ]
+}
