@@ -1,10 +1,11 @@
-BATS_MOCK_TMPDIR="${BATS_TMPDIR}"
+BATS_MOCK_TMPDIR="$(mktemp -u -d "${BATS_TMPDIR:-/tmp}/mock.XXXXXXXX")"
 BATS_MOCK_BINDIR="${BATS_MOCK_TMPDIR}/bin"
 
 export BATS_MOCK_REAL_mkdir=$(which mkdir)
 export BATS_MOCK_REAL_ln=$(which ln)
 export BATS_MOCK_REAL_touch=$(which touch)
 export BATS_MOCK_REAL_rm=$(which rm)
+export BATS_MOCK_REAL_find=$(which find)
 
 PATH="$BATS_MOCK_BINDIR:$PATH"
 
@@ -47,5 +48,7 @@ unstub() {
 
   "$BATS_MOCK_REAL_rm" -f "$path"
   "$BATS_MOCK_REAL_rm" -f "${BATS_MOCK_TMPDIR}/${program}-stub-plan" "${BATS_MOCK_TMPDIR}/${program}-stub-run" "${BATS_MOCK_TMPDIR}/${program}-stub-errors"
+  # Delete all empty folders but don't fail
+  { "$BATS_MOCK_REAL_find" "${BATS_MOCK_TMPDIR}" -type d -empty -delete || true; } &> /dev/null
   return "$STATUS"
 }

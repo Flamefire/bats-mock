@@ -332,3 +332,27 @@ Unexpected call: `mycommand bar`' ]
   [ "$status" -eq 1 ]
   [ "$output" == 'Unexpected call: `mycommand foo`' ]
 }
+
+@test "Folders created on stub and cleaned up after unstub" {
+  stub mycommand
+  stub mycommand2
+  # Variables must be set
+  [[ $BATS_MOCK_TMPDIR ]]
+  [[ $BATS_MOCK_BINDIR ]]
+  # Folders must exist
+  [[ -d "$BATS_MOCK_TMPDIR" ]]
+  [[ -d "$BATS_MOCK_BINDIR" ]]
+  # BINDIR must be in TMPDIR
+  [[ "$BATS_MOCK_BINDIR" == "$BATS_MOCK_TMPDIR"/* ]]
+  # Stubs must be inside BINDIR
+  [[ "$(which mycommand)" == "$BATS_MOCK_BINDIR"/* ]]
+  [[ "$(which mycommand2)" == "$BATS_MOCK_BINDIR"/* ]]
+  unstub mycommand
+  # Folders must still exist
+  [[ -d "$BATS_MOCK_TMPDIR" ]]
+  [[ -d "$BATS_MOCK_BINDIR" ]]
+  unstub mycommand2
+  # Folders must be removed
+  [[ ! -d "$BATS_MOCK_TMPDIR" ]]
+  [[ ! -d "$BATS_MOCK_BINDIR" ]]
+}
