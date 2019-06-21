@@ -21,4 +21,5 @@ function touch {
   [ "$status" -eq 0 ]
   [ "$output" == "OK" ]
   unstub mycommand
+  unset -f rm # Workaround for failure in bats due to usage of `rm`
 }
