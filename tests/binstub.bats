@@ -4,7 +4,7 @@ load '../load'
 
 function teardown() {
     # Just clean up
-    unstub --allow-missing mycommand
+    stub_reset
 }
 
 # Uncomment to enable stub debug output:

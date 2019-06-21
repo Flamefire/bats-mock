@@ -78,7 +78,55 @@ The plan is verified, one by one, as the calls come in, but the final check that
 
 ### Unstubbing
 
-Once the test case is done, you should call `unstub <program>` in order to clean up the temporary files, and make a final check that all the plans have been met for the stub.
+Once the test case is done, you should call `unstub_all` in order to clean up the temporary files, and make a final check that all the plans have been met for all stubs.
+It will print appropriate error messages and return non-zero if anything went wrong, and zero if all plans were validated successfully.
+As this works even when no stubs are set, you can (and should) put that into your `teardown` function.
+
+```bash
+function teardown {
+  unstub_all
+}
+
+@test "test stubbing curl" {
+  stub curl "$CURL_ARGS : echo 'Fake output'"
+  run curl "$CURL_ARGS"
+  # Will be verified in teardown
+}
+```
+
+For finer granularity you can also call `unstub <program>` to unstub a single program.
+You can do that in your test case to verify expectations have been met at that point or in the `teardown` function.
+`unstub <program>` will make sure a stub exists and the plan was executed successfully.
+If a call was done with wrong parameters, not at all or is missing an error will be printed.
+
+**Carefull**: Using `unstub <program>` in `teardown` will only work, if all tests stub that program otherwise `unstub` will fail because the stub was not found.
+You can avoid this by passing `--allow-missing` to `unstub`:
+
+```bash
+function teardown {
+  unstub --allow-missing curl
+}
+
+@test "test stubbing curl" {
+  stub curl "$CURL_ARGS : echo 'Fake output'"
+  run curl "$CURL_ARGS"
+  # Verify here
+  unstub curl
+  # Setup new plan
+  stub curl "$CURL_OTHER_ARGS : echo 'Fake output2'"
+  run curl "$CURL_OTHER_ARGS"
+  # Will be verified in teardown
+}
+
+@test "test using curl" {
+  run curl "$CURL_ARGS"
+}
+```
+
+To make your life easier you can use `stub_reset`:   
+This smply removes all stubs, plans etc.
+Should be called in `teardown` if you verify all your stubs manually and even when you never setup any stubs.
+Of course you can call this in a test to reset all stubs currently set.
 
 ### Verifying stub input
 

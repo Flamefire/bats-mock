@@ -6,6 +6,7 @@ export BATS_MOCK_REAL_ln=$(which ln)
 export BATS_MOCK_REAL_touch=$(which touch)
 export BATS_MOCK_REAL_rm=$(which rm)
 export BATS_MOCK_REAL_find=$(which find)
+export BATS_MOCK_REAL_basename=$(which basename)
 
 PATH="$BATS_MOCK_BINDIR:$PATH"
 
@@ -51,4 +52,21 @@ unstub() {
   # Delete all empty folders but don't fail
   { "$BATS_MOCK_REAL_find" "${BATS_MOCK_TMPDIR}" -type d -empty -delete || true; } &> /dev/null
   return "$STATUS"
+}
+
+stub_reset() {
+  # Simply remove the whole folder
+  # That deletes all stubs, plans etc.
+  "$BATS_MOCK_REAL_rm" -rf "${BATS_MOCK_TMPDIR}" || true
+}
+
+unstub_all() {
+  local result=0
+  if [ -d "${BATS_MOCK_BINDIR}" ]; then
+    for program in "${BATS_MOCK_BINDIR}"/*; do
+      program=$("${BATS_MOCK_REAL_basename}" "${program}")
+      unstub "${program}" || result=1
+    done
+  fi
+  return $result
 }
