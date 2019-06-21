@@ -12,6 +12,7 @@ _STUB_INDEX="${PROGRAM}_STUB_INDEX"
 _STUB_RESULT="${PROGRAM}_STUB_RESULT"
 _STUB_END="${PROGRAM}_STUB_END"
 _STUB_DEBUG="${PROGRAM}_STUB_DEBUG"
+_STUB_ERRORS="${PROGRAM}_STUB_ERRORS"
 
 debug() {
   if [ -n "${!_STUB_DEBUG}" ] ; then
@@ -31,6 +32,26 @@ if [ -z "${!_STUB_END}" ]; then
   debug "got $program $*"
 fi
 
+function _stub_split_pattern_line {
+    # Split the line into an array of arguments to match and a command to run.
+    # If the line does not contain ' : ' and does not start with a colon
+    # then the call is assumed to match any arguments and execute the command.
+    # Special case: Lines starting with double colon are also handled that way
+    # and get the double colons removed
+    allow_any_args=1
+    command=" $line"
+    patterns=
+    if [[ "$line" == ::* ]]; then
+      command="${line#::}"
+    elif [ "$command" != "${command/ : }" ]; then
+      patterns="${command%% : *}"
+      command="${command#* : }"
+      allow_any_args=0
+    else
+      command="$line"
+    fi
+}
+
 # Loop over each line in the plan.
 index=0
 match_found=0
@@ -49,18 +70,9 @@ while IFS= read -r line; do
     arguments=("$@")
     debug "arguments [${#arguments[@]}] = $(printf "'%q' " "${arguments[@]}")"
 
-    # Split the line into an array of arguments to match and a command to run.
-    # If the line does not contain ' : ' and does not start with a colon
-    # then the call is assumed to match any arguments and execute the command.
-    # Special case: Lines starting with double colon are also handled that way
-    # and get the double colons removed
-    command=" $line"
-    if [[ "$line" == ::* ]]; then
-      command="${line#::}"
-    elif [ "$command" != "${command/ : }" ]; then
-      patterns="${command%% : *}"
-      command="${command#* : }"
-
+    _stub_split_pattern_line "$line"
+    
+    if [ $allow_any_args -eq 0 ]; then
       parsed_patterns=()
 
       # Parse patterns into tokens using eval to respect quoted
@@ -102,20 +114,28 @@ done < "${!_STUB_PLAN}"
 
 
 if [ -n "${!_STUB_END}" ]; then
-  debug "unstubbing"
-
-  if [ ! -f "${!_STUB_RUN}" ] && [ -n "${!_STUB_DEBUG}" ] ; then
-    echo "The stub for ${program} wasn't run"
-    exit 1
-  fi
-
-  # Clean up the run file.
-  "$BATS_MOCK_REAL_rm" -f "${!_STUB_RUN}"
-
   # If the number of lines in the plan is larger than
   # the requested index, we failed.
   if [ $index -ge "${!_STUB_INDEX}" ]; then
     eval "${_STUB_RESULT}"=1
+    index=0
+    while IFS= read -r line; do
+      index=$((index + 1))
+
+      if [ $index -ge "${!_STUB_INDEX}" ]; then
+        _stub_split_pattern_line "$line"
+        if [ $allow_any_args -eq 1 ]; then
+          echo "Missing call[$index]: \`$program\` \*"
+        else
+          echo "Missing call[$index]: \`$program${patterns}\`"
+        fi
+      fi
+    done < "${!_STUB_PLAN}"
+  fi
+  if [ -f "${!_STUB_ERRORS}" ]; then
+    while IFS= read -r line; do
+      echo "Unexpected call: \`$program${line:+ }${line% }\`"
+    done < "${!_STUB_ERRORS}"
   fi
 
   # Return the result.
@@ -133,6 +153,10 @@ else
   else
     debug "no plan row found"
     eval "${_STUB_RESULT}"=1
+    if [ $# -gt 0 ]; then
+      printf "%q " "$@" >> "${!_STUB_ERRORS}"
+    fi
+    printf "\n" >> "${!_STUB_ERRORS}"
   fi
 
   # Write out the run information.

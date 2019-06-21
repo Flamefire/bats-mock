@@ -15,6 +15,7 @@ stub() {
 
   export "${prefix}_STUB_PLAN"="${BATS_MOCK_TMPDIR}/${program}-stub-plan"
   export "${prefix}_STUB_RUN"="${BATS_MOCK_TMPDIR}/${program}-stub-run"
+  export "${prefix}_STUB_ERRORS"="${BATS_MOCK_TMPDIR}/${program}-stub-errors"
   export "${prefix}_STUB_END"=
 
   "$BATS_MOCK_REAL_mkdir" -p "${BATS_MOCK_BINDIR}"
@@ -45,6 +46,6 @@ unstub() {
   fi
 
   "$BATS_MOCK_REAL_rm" -f "$path"
-  "$BATS_MOCK_REAL_rm" -f "${BATS_MOCK_TMPDIR}/${program}-stub-plan" "${BATS_MOCK_TMPDIR}/${program}-stub-run"
+  "$BATS_MOCK_REAL_rm" -f "${BATS_MOCK_TMPDIR}/${program}-stub-plan" "${BATS_MOCK_TMPDIR}/${program}-stub-run" "${BATS_MOCK_TMPDIR}/${program}-stub-errors"
   return "$STATUS"
 }

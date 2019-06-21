@@ -50,7 +50,7 @@ function teardown() {
 
   run unstub mycommand
   [ "$status" -eq 1 ]
-  [[ "$output" == "" ]]
+  [ "$output" == 'Unexpected call: `mycommand llamas`' ]
 }
 
 @test "Stub a single command with quoted strings" {
@@ -89,10 +89,10 @@ function teardown() {
 
 @test "Fail if empty stubbed command called" {
   stub mycommand
-  mycommand --help || true # Don't fail here
+  mycommand || true # Don't fail here
   run unstub mycommand
   [ "$status" -eq 1 ]
-  [ "$output" == "" ]
+  [ "$output" == 'Unexpected call: `mycommand`' ]
 }
 
 @test "Fail if called out of sequence" {
@@ -105,7 +105,47 @@ function teardown() {
   [ "$output" == "OK" ]
   run unstub mycommand
   [ "$status" -eq 1 ]
-  [ "$output" == "" ]
+  [ "$output" == 'Unexpected call: `mycommand baz`
+Unexpected call: `mycommand bar`' ]
+}
+
+@test "Fail message handles whitespace etc" {
+  stub mycommand # Don't expect any calls
+  ! mycommand # No args
+  run unstub mycommand
+  [ "$status" -eq 1 ]
+  [ "$output" == 'Unexpected call: `mycommand`' ]
+  stub mycommand
+  ! mycommand arg1 arg2 # Multiple args
+  run unstub mycommand
+  [ "$status" -eq 1 ]
+  [ "$output" == 'Unexpected call: `mycommand arg1 arg2`' ]
+  stub mycommand
+  ! mycommand "arg1 arg2" # Quoted arg with whitespace
+  run unstub mycommand
+  [ "$status" -eq 1 ]
+  [ "$output" == 'Unexpected call: `mycommand arg1\ arg2`' ]
+  stub mycommand
+  ! mycommand '"arg1"' '"arg2"' # Quotes in args
+  run unstub mycommand
+  [ "$status" -eq 1 ]
+  [ "$output" == 'Unexpected call: `mycommand \"arg1\" \"arg2\"`' ]
+  stub mycommand
+  ! mycommand "'arg1'" "'arg2'" # Quotes in args
+  run unstub mycommand
+  [ "$status" -eq 1 ]
+  [ "$output" == "Unexpected call: \`mycommand \'arg1\' \'arg2\'\`" ]
+}
+
+@test "Fail if invocation is missing" {
+  stub mycommand \
+    "foo : " \
+    "foo : "
+  mycommand foo
+  run unstub mycommand
+  [ "$status" -eq 1 ]
+  echo "$output"
+  [ "$output" == 'Missing call[2]: `mycommand foo`' ]
 }
 
 @test "Check stdin" {
@@ -220,6 +260,7 @@ function teardown() {
   [ "$output" == "" ]
   run unstub mycommand
   [ "$status" -eq 1 ]
+  [ "$output" == 'Unexpected call: `mycommand /foo/baz/myfile`' ]
 }
 
 @test "Allow incremental stubbing" {
@@ -289,4 +330,5 @@ function teardown() {
   [ "$output" == '' ]
   run unstub mycommand
   [ "$status" -eq 1 ]
+  [ "$output" == 'Unexpected call: `mycommand foo`' ]
 }
