@@ -1,5 +1,7 @@
 # bats-mock
 
+[![Build Status](https://travis-ci.com/Flamefire/bats-mock.svg?branch=master)](https://travis-ci.com/Flamefire/bats-mock)
+
 Mocking/stubbing library for BATS (Bash Automated Testing System)
 
 A maintained fork of https://github.com/jasonkarns/bats-mock, which is dormant.
